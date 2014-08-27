@@ -27,8 +27,13 @@ keystone user-create --name glance --tenant services --pass $GLANCE_KEYSTONE_PAS
 fi
 
 echo "Assigning glance user to admin role."
+if ! keystone user-role-list --tenant services --user glance | grep -q admin; then
 keystone user-role-add --user glance --role admin --tenant services >>$logfile
+fi
+
+if keystone user-role-list --tenant services --user glance | grep -q _member_; then
 keystone user-role-remove --user glance --role _member_ --tenant services >>$logfile
+fi
 
 cat <<EOF
 

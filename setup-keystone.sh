@@ -47,8 +47,10 @@ echo "Creating admin user."
 _keystone user-create --name admin --tenant admin --pass $KEYSTONE_ADMIN_PASS >>$logfile
 fi
 
+if ! _keystone user-role-list --tenant admin --user admin | grep -q admin; then
 echo "Assigning admin user to admin role."
 _keystone user-role-add --user admin --role admin --tenant admin >>$logfile
+fi
 
 if ! _keystone tenant-list | grep -q services; then
 echo "Creating services tenant."
