@@ -29,7 +29,7 @@ container to experiment with the services by running:
       --link glance:glance \
       --volumes-from glance \
       --volumes-from keystone  \
-      --e OS_PASSWORD=$KEYSTONE_ADMIN_PASS_FROM_SETTINGS_DOT_YML \
+      -e OS_PASSWORD=$KEYSTONE_ADMIN_PASS_FROM_SETTINGS_DOT_YML \
       larsks/os-apiclient /bin/bash
 
 And once at the shell prompt:
