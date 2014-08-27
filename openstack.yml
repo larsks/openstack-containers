@@ -1,0 +1,54 @@
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: start rabbitmq server
+      docker:
+        image: larsks/rabbitmq
+        name: rabbitmq
+        state: running
+    - name: start database server
+      docker:
+        image: mysql
+        name: mysql
+        state: running
+        env:
+          - MYSQL_ROOT_PASSWORD=secret
+    - name: initialize keystone database
+      shell: >
+        docker run --link mysql:mysql -i --rm mysql
+        mysql -u root -h mysql -psecret < init-keystone.sql
+    - name: initialize glance database
+      shell: >
+        docker run --link mysql:mysql -i --rm mysql
+        mysql -u root -h mysql -psecret < init-glance.sql
+    - name: start keystone server
+      docker:
+        image: larsks/keystone
+        name: keystone
+        links:
+          - mysql
+        env:
+          - KEYSTONE_DB_PASS=supersecret
+    - name: initialize keystone
+      shell: >
+        docker run
+        --link mysql:mysql
+        --link keystone:keystone
+        --rm -i larsks/os-apiclient bash < setup-keystone.sh
+    - name: add keystone entries for glance
+      shell: >
+        docker run
+        --link mysql:mysql
+        --link keystone:keystone
+        --rm -i larsks/os-apiclient bash < setup-glance.sh
+    - name: start glance server
+      docker:
+        image: larsks/glance
+        name: glance
+        links:
+          - mysql
+          - keystone
+          - rabbitmq:amqphost
+        env:
+          - GLANCE_DB_PASS=supersecret
+
