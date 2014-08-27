@@ -1,0 +1,6 @@
+MYSQL_ROOT_PASSWORD: secret
+KEYSTONE_ADMIN_PASS: adminsecret
+KEYSTONE_ADMIN_TOKEN: thisisareallylongtoken
+KEYSTONE_DB_PASS: keystonesecret
+GLANCE_DB_PASS: glancedbsecret
+GLANCE_KEYSTONE_PASS: glancekssecret

@@ -1,9 +1,12 @@
 #!/bin/sh
 
+: ${KEYSTONE_ADMIN_PASS:=secret}
+: ${KEYSTONE_ADMIN_TOKEN:=ADMIN}
+
 logfile=/var/log/setup-keystone.log
 
 _keystone () {
-	keystone --os-endpoint http://keystone:35357/v2.0 --os-token ADMIN "$@"
+	keystone --os-endpoint http://keystone:35357/v2.0 --os-token $KEYSTONE_ADMIN_TOKEN "$@"
 }
 
 cat <<EOF
@@ -12,6 +15,8 @@ Initializing keystone
 ======================================================================
 
 EOF
+
+set -e
 
 if ! _keystone service-list | grep -q keystone; then
 echo "Creating keystone service."
@@ -39,7 +44,7 @@ fi
 
 if ! _keystone user-list | grep -q admin; then
 echo "Creating admin user."
-_keystone user-create --name admin --tenant admin --pass secret >>$logfile
+_keystone user-create --name admin --tenant admin --pass $KEYSTONE_ADMIN_PASS >>$logfile
 fi
 
 echo "Assigning admin user to admin role."
