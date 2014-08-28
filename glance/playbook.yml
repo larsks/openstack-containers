@@ -32,3 +32,11 @@
         env:
           - GLANCE_DB_PASS={{GLANCE_DB_PASS}}
           - GLANCE_KEYSTONE_PASS={{GLANCE_KEYSTONE_PASS}}
+
+    # wait for glance to become available before we continue.
+    - name: get glance server ip
+      command: docker inspect --format '{{ .NetworkSettings.IPAddress }}' glance
+      register: glanceip
+    - name: wait for glance api to become active
+      wait_for: host={{glanceip.stdout}} port=9292 state=present
+
