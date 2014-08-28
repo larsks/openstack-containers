@@ -1,0 +1,34 @@
+- hosts: localhost
+  tags:
+    - glance
+  gather_facts: false
+  tasks:
+    # initialize glance database schema
+    - name: initialize glance database
+      shell: >
+        docker run --link mysql:mysql -i --rm 
+        -e GLANCE_DB_PASS={{GLANCE_DB_PASS}}
+        -e MYSQL_ROOT_PASSWORD={{MYSQL_ROOT_PASSWORD}}
+        mysql bash < init-glance.sh
+    # create keystone users and service catalog entries for glance.
+    - name: add keystone entries for glance
+      shell: >
+        docker run
+        --link mysql:mysql
+        --link keystone:keystone
+        -e KEYSTONE_ADMIN_PASS={{KEYSTONE_ADMIN_PASS}}
+        -e GLANCE_KEYSTONE_PASS={{GLANCE_KEYSTONE_PASS}}
+        --rm -i larsks/os-apiclient bash < setup-glance.sh
+
+    # start the glance server.
+    - name: start glance server
+      docker:
+        image: larsks/glance
+        name: glance
+        links:
+          - mysql
+          - keystone
+          - rabbitmq
+        env:
+          - GLANCE_DB_PASS={{GLANCE_DB_PASS}}
+          - GLANCE_KEYSTONE_PASS={{GLANCE_KEYSTONE_PASS}}

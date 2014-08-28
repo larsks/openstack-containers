@@ -1,0 +1,44 @@
+- hosts: localhost
+  tags:
+    - nova
+  gather_facts: false
+  tasks:
+    # initialize nova database schema
+    - name: initialize nova database
+      shell: >
+        docker run --link mysql:mysql -i --rm 
+        -e NOVA_DB_PASS={{NOVA_DB_PASS}}
+        -e MYSQL_ROOT_PASSWORD={{MYSQL_ROOT_PASSWORD}}
+        mysql bash < init-nova.sh
+
+    # create keystone users and service catalog entries for nova.
+    - name: add keystone entries for nova
+      shell: >
+        docker run
+        --link mysql:mysql
+        --link keystone:keystone
+        -e KEYSTONE_ADMIN_PASS={{KEYSTONE_ADMIN_PASS}}
+        -e NOVA_KEYSTONE_PASS={{NOVA_KEYSTONE_PASS}}
+        --rm -i larsks/os-apiclient bash < setup-nova.sh
+
+    # start the nova controller.
+    - name: start nova server
+      docker:
+        image: larsks/nova-controller
+        name: nova
+        links:
+          - mysql
+          - rabbitmq
+          - keystone
+          - glance
+        env:
+          - NOVA_DB_PASS={{NOVA_DB_PASS}}
+          - NOVA_KEYSTONE_PASS={{NOVA_KEYSTONE_PASS}}
+
+    # wait for nova to become available before we continue.
+    - name: get nova controller ip
+      command: docker inspect --format '{{ .NetworkSettings.IPAddress }}' nova
+      register: novaip
+    - name: wait for nova api to become active
+      wait_for: host={{novaip.stdout}} port=8774 state=present
+

@@ -1,0 +1,9 @@
+- hosts: localhost
+  gather_facts: false
+  tags:
+    - rabbitmq
+  tasks:
+    - name: start rabbitmq server
+      docker:
+        image: larsks/rabbitmq
+        name: rabbitmq

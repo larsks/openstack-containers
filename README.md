@@ -8,6 +8,8 @@ playbook will create:
 - A rabbitmq server
 - A keystone server
 - A glance server
+- A nova controller with nova-api, nova-scheduler, nova-conductor,
+  etc.
 
 [mysql docker image]: https://registry.hub.docker.com/_/mysql/
 
@@ -16,7 +18,7 @@ repositories][].
 
 [my docker repositories]: https://hub.docker.com/u/larsks/
 
-To deploy these services, edit `settings.yml` as appropriate and then
+To deploy these services, edit `group_vars/all.yml` as appropriate and then
 run:
 
     ansible-playbook openstack.yml
@@ -27,8 +29,10 @@ container to experiment with the services by running:
     docker run -it --rm  \
       --link keystone:keystone \
       --link glance:glance \
+      --link nova:nova \
       --volumes-from glance \
       --volumes-from keystone  \
+      --volumes-from nova-controller  \
       -e OS_PASSWORD=$KEYSTONE_ADMIN_PASS_FROM_SETTINGS_DOT_YML \
       larsks/os-apiclient /bin/bash
 

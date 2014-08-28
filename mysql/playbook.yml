@@ -1,0 +1,22 @@
+- hosts: localhost
+  tags:
+    - mysql
+  gather_facts: false
+  tasks:
+    # create a mysql container using the official mysql image
+    - name: start database server
+      docker:
+        image: mysql
+        name: mysql
+        env:
+          - MYSQL_ROOT_PASSWORD={{MYSQL_ROOT_PASSWORD}}
+
+    # mysql takes a few seconds to start up.  the next two tasks ask docker for
+    # the ip address of the mysql container and then wait for the mysql port to
+    # become available.
+    - name: get database server ip
+      command: docker inspect --format '{{ .NetworkSettings.IPAddress }}' mysql
+      register: mysqlip
+    - name: wait for database server to become active
+      wait_for: host={{mysqlip.stdout}} port=3306 state=present
+

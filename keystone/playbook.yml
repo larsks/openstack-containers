@@ -1,0 +1,47 @@
+- hosts: localhost
+  tags:
+    - keystone
+  gather_facts: false
+  tasks:
+    # now we create databases and set up some database credentials.  note 
+    # here that we are passing in credentials via environment variables (so
+    # that we don't need to hardcode the credentials into our scripts).
+    - name: initialize keystone database
+      shell: >
+        docker run --link mysql:mysql -i --rm
+        -e KEYSTONE_DB_PASS={{KEYSTONE_DB_PASS}}
+        -e MYSQL_ROOT_PASSWORD={{MYSQL_ROOT_PASSWORD}}
+        mysql bash < init-keystone.sh
+
+    # now that the database is available, we can start a keystone instance.  we
+    # are passing in the keystone database password and admin token as
+    # environment variables; these will be used by a sysinit script to 
+    # configure keystone.
+    - name: start keystone server
+      docker:
+        image: larsks/keystone
+        name: keystone
+        links:
+          - mysql
+        env:
+          - KEYSTONE_DB_PASS={{KEYSTONE_DB_PASS}}
+          - KEYSTONE_ADMIN_TOKEN={{KEYSTONE_ADMIN_TOKEN}}
+
+    # wait for keystone to become available before we continue.
+    - name: get keystone server ip
+      command: docker inspect --format '{{ .NetworkSettings.IPAddress }}' keystone
+      register: keystoneip
+    - name: wait for keystone server to become active
+      wait_for: host={{keystoneip.stdout}} port=5000 state=present
+
+    # create some basic keystone entities, like an admin tenant/role/user and
+    # the keystone entries in the service catalog.
+    - name: initialize keystone
+      shell: >
+        docker run
+        --link mysql:mysql
+        --link keystone:keystone
+        -e KEYSTONE_ADMIN_TOKEN={{KEYSTONE_ADMIN_TOKEN}}
+        -e KEYSTONE_ADMIN_PASS={{KEYSTONE_ADMIN_PASS}}
+        --rm -i larsks/os-apiclient bash < setup-keystone.sh
+
