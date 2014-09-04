@@ -6,3 +6,5 @@ GLANCE_DB_PASS: glancedbsecret
 GLANCE_KEYSTONE_PASS: glancekssecret
 NOVA_DB_PASS: novadbsecret
 NOVA_KEYSTONE_PASS: novakssecret
+HEAT_DB_PASS: heatdbsecret
+HEAT_KEYSTONE_PASS: heatkssecret

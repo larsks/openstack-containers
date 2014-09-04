@@ -3,4 +3,5 @@
 - include: keystone/playbook.yml
 - include: glance/playbook.yml
 - include: nova/playbook.yml
+- include: heat/playbook.yml
 

@@ -1,0 +1,44 @@
+- hosts: localhost
+  tags:
+    - heat
+  gather_facts: false
+  tasks:
+    # initialize glance database schema
+    - name: initialize heat database
+      shell: >
+        docker run --link mysql:mysql -i --rm 
+        -e HEAT_DB_PASS={{HEAT_DB_PASS}}
+        -e MYSQL_ROOT_PASSWORD={{MYSQL_ROOT_PASSWORD}}
+        mysql bash < init-heat.sh
+    # create keystone users and service catalog entries for glance.
+    - name: add keystone entries for heat
+      shell: >
+        docker run
+        --link mysql:mysql
+        --link keystone:keystone
+        -e KEYSTONE_ADMIN_PASS={{KEYSTONE_ADMIN_PASS}}
+        -e HEAT_KEYSTONE_PASS={{HEAT_KEYSTONE_PASS}}
+        --rm -i larsks/os-apiclient bash < setup-heat.sh
+
+    # start the glance server.
+    - name: start heat server
+      docker:
+        image: larsks/heat
+        name: heat
+        links:
+          - mysql
+          - keystone
+          - rabbitmq
+          - glance
+          - nova
+        env:
+          - HEAT_DB_PASS={{HEAT_DB_PASS}}
+          - HEAT_KEYSTONE_PASS={{HEAT_KEYSTONE_PASS}}
+
+    # wait for glance to become available before we continue.
+    - name: get heat server ip
+      command: docker inspect --format '{{ .NetworkSettings.IPAddress }}' heat
+      register: heatip
+    - name: wait for heat to become active
+      wait_for: host={{heatip.stdout}} port=8004 state=present
+
